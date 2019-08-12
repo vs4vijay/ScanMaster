@@ -1,34 +1,35 @@
 # VulnScanner
 
+Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates then scan result.
 
-### Prerequisites
+## Prerequisites
 
 - Python 3
 - Zap
 - Nexpose
 
 
-### Installation
+## Installation
 
 `pip3 install -r requirements.txt`
 
 
-### Configuration
+## Configuration
 
-The configuration of each scanner is in `scanners/<name>.py` file. Fill the proper API Keys and Credentials details before using.
+The configuration of each scanner is in `scanners/<name>.py` file. Update the values with the proper API Keys and Credentials details before using.
 
 
-### Start a Scan againt a Target
+## Start a Scan against a Target
 
 `./main.py --scan-name <scan-name> --target <url>`
 
 
-### Get scan result
+## Get scan result
 
 `./main.py --scan-name <scan-name>`
 
 
-### Targets to Test
+## Targets to Test
 - http://scanme.nmap.org
 - http://webscantest.com
 
@@ -41,13 +42,7 @@ The configuration of each scanner is in `scanners/<name>.py` file. Fill the prop
 
 
 
-pprint(core.htmlreport())
-
-
-
-
-
-#### Development Notes
+### Development Notes
 
 ```
 python3 -m venv .venv
@@ -75,10 +70,17 @@ Scanner Interface:
 
 
 
+---------------------------------------------
+
+
+
+```python3
 
 
 
 
+
+        pprint(core.htmlreport())
 
 
 
@@ -87,7 +89,6 @@ Scanner Interface:
 
 
 
----------
 
 
 
@@ -164,10 +165,6 @@ report_config.organization = 'Organization'
 # report_config.email = rapid7vmconsole.ReportEmail(additional_recipients=['asd@asd.asd'])
 
 
-        ########
+# print('self.zap.spider.results', self.zap.spider.results(scan_id))
 
-
-
-
-
-        # print('self.zap.spider.results', self.zap.spider.results(scan_id))
+```
