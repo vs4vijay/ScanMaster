@@ -205,11 +205,16 @@ class ZapScanner(Scanner):
             print(f'[{self.name}] No Scan Details found for {scan_name}')
             return False
 
-        scan_id = scan_data['scan_id']
-        ascan_status = self.zap.ascan.status(scan_id)
+        zap_id = scan_data['ZAP']['zap_id']
+
+        try:
+            ascan_status = self.zap.ascan.status(zap_id)
+        except:
+            print(f'[{self.name}] Could not get the scan {zap_id}')
+            return False
 
         if(ascan_status == 'does_not_exist'):
-            print(f'[{self.name}] No Scans found for Scan Id {scan_id}')
+            print(f'[{self.name}] No Scans found for Scan Id {zap_id}')
             return False
 
         return True
@@ -227,8 +232,3 @@ class ZapScanner(Scanner):
                 scan_results[name]['urls'].add(alert['url'])
 
         return scan_results
-
-
-
-
-

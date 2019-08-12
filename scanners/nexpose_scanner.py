@@ -137,7 +137,11 @@ class NexposeScanner(Scanner):
         print(f'[{self.name}] Scan Name: {scan_name}')
         print(f'[{self.name}] Scan Id: {nexpose_id}')
         
-        scan_info = self.nexpose.get_scan(nexpose_id)
+        try:
+            scan_info = self.nexpose.get_scan(nexpose_id)
+        except:
+            print(f'[{self.name}] Could not get the scan {nexpose_id}')
+            return False
 
         scan_status['vulnerabilities'] = scan_info.vulnerabilities.__dict__
         scan_status['status'] = 'COMPLETE' if scan_info.status == 'finished' else 'INPROGRESS' if scan_info.status == 'running' else scan_info.status
@@ -176,7 +180,12 @@ class NexposeScanner(Scanner):
         report_id = scan_data.get('NEXPOSE', {})['report_id']
         report_instance_id = scan_data.get('NEXPOSE', {})['report_instance_id']
 
-        downloaded_report = self.nexpose_report.download_report(report_id, report_instance_id)
+        try:
+            downloaded_report = self.nexpose_report.download_report(report_id, report_instance_id)
+        except:
+            print(f'[{self.name}] Could not get the scan {nexpose_id}')
+            return False
+
         parsed_report = BeautifulSoup(downloaded_report, features='xml')
 
         self._process_results(parsed_report, scan_results)
