@@ -1,6 +1,7 @@
 # VulnScanner
 
-Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates then scan result.
+Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates the scan result.
+
 
 ## Prerequisites
 
@@ -16,7 +17,7 @@ Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolid
 
 ## Configuration
 
-The configuration of each scanner is in `scanners/<name>.py` file. Update the values with the proper API Keys and Credentials details before using.
+The configuration of scanners will be in Environment File `.env`. There is sample `.env.example` file in the codebase, update the values with the proper API Keys and Credentials details before using. Rename it to `.env`.
 
 
 ## Start a Scan against a Target
@@ -115,8 +116,6 @@ Scanner Interface:
         pprint(scan)
 
 
-
----------
 
 if shutdownOnceFinished:
     # Shutdown ZAP once finished

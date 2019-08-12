@@ -1,17 +1,21 @@
+import os
 import time
 import base64
 
 import rapid7vmconsole
 from pprint import pprint
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
 
+load_dotenv(find_dotenv())
+
 config = {
-    'HOST': 'https://url:3780',
-    'USERNAME': 'username',
-    'PASSWORD': 'password'
+    'HOST': os.getenv('NEXPOSE_HOST'),
+    'USERNAME': os.getenv('NEXPOSE_USERNAME'),
+    'PASSWORD': os.getenv('NEXPOSE_PASSWORD')
 }
 
 class NexposeScanner(Scanner):

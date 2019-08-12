@@ -5,10 +5,16 @@ import time
 import logging
 import argparse
 
+from dotenv import load_dotenv, find_dotenv
+
 from scanners.zap_scanner import ZapScanner
 from scanners.nexpose_scanner import NexposeScanner
 
+
+load_dotenv(find_dotenv())
+
 logging.basicConfig(filename='vuln-scanner.log', level=logging.INFO)
+
 
 def main(config):
 

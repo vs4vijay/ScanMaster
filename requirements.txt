@@ -5,6 +5,7 @@ idna==2.8
 lxml==4.4.1
 pprint==0.1
 python-dateutil==2.8.0
+python-dotenv==0.10.3
 python-owasp-zap-v2.4==0.0.15
 rapid7-vm-console===1.0.0-6.5.50
 requests==2.22.0

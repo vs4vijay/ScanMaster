@@ -1,13 +1,17 @@
+import os
 import time
+
 
 from pprint import pprint
 from zapv2 import ZAPv2
+from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
 
+load_dotenv(find_dotenv())
 
-API_KEY='api_key'
+API_KEY=os.getenv('ZAP_API_KEY')
 SLEEP_INTERVAL=2
 
 class ZapScanner(Scanner):
