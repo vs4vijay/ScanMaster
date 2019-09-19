@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 
 
@@ -8,6 +9,7 @@ from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
+from core.common_service import CommonService
 
 load_dotenv(find_dotenv())
 
@@ -27,6 +29,7 @@ class ZapScanner(Scanner):
     def __init__(self):
         self.zap = ZAPv2(apikey=API_KEY)
         self.storage_service = StorageService()
+        self.common_service = CommonService()
     
     def start(self, scan_name, target):
         print(f'[{self.name}] Starting Scan for Target: {target}')
@@ -34,7 +37,7 @@ class ZapScanner(Scanner):
         try:
             return self.scan(scan_name, target)
         except:
-            print(f'[{self.name}] Not able to connect to the {self.name}') 
+            print(f'[{self.name}] Not able to connect to the {self.name}: ', sys.exc_info()) 
             return False
 
     def pause(self, scan_name):
@@ -214,7 +217,7 @@ class ZapScanner(Scanner):
         try:
             ascan_status = self.zap.ascan.status(zap_id)
         except:
-            print(f'[{self.name}] Could not get the scan {zap_id}')
+            print(f'[{self.name}] Could not get the scan {zap_id}: ', sys.exc_info())
             return False
 
         if(ascan_status == 'does_not_exist'):

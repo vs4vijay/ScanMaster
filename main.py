@@ -9,16 +9,16 @@ from dotenv import load_dotenv, find_dotenv
 
 from scanners.zap_scanner import ZapScanner
 from scanners.nexpose_scanner import NexposeScanner
+from scanners.openvas_scanner import OpenVASScanner
 
 
 load_dotenv(find_dotenv())
 
 logging.basicConfig(filename='vuln-scanner.log', level=logging.INFO)
 
-
 def main(config):
 
-    scanners = [ZapScanner(), NexposeScanner()]
+    scanners = [ZapScanner(), NexposeScanner(), OpenVASScanner()]
 
     scan_results = {}
     scan_status_list = []

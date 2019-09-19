@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import base64
 
@@ -9,6 +10,7 @@ from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
+from core.common_service import CommonService
 
 load_dotenv(find_dotenv())
 
@@ -48,6 +50,7 @@ class NexposeScanner(Scanner):
         self.nexpose_assets = rapid7vmconsole.AssetApi(api_client)
         self.nexpose_report = rapid7vmconsole.ReportApi(api_client)
         self.storage_service = StorageService()
+        self.common_service = CommonService()
     
 
     def start(self, scan_name, target):
@@ -56,7 +59,7 @@ class NexposeScanner(Scanner):
         try:
             return self.scan(scan_name, target)
         except:
-            print(f'[{self.name}] Not able to connect to the {self.name}') 
+            print(f'[{self.name}] Not able to connect to the {self.name}: ', sys.exc_info()) 
             return False
 
     def scan(self, scan_name, target):
@@ -144,7 +147,7 @@ class NexposeScanner(Scanner):
         try:
             scan_info = self.nexpose.get_scan(nexpose_id)
         except:
-            print(f'[{self.name}] Could not get the scan {nexpose_id}')
+            print(f'[{self.name}] Could not get the scan {nexpose_id}: ', sys.exc_info())
             return False
 
         scan_status['vulnerabilities'] = scan_info.vulnerabilities.__dict__
@@ -187,7 +190,7 @@ class NexposeScanner(Scanner):
         try:
             downloaded_report = self.nexpose_report.download_report(report_id, report_instance_id)
         except:
-            print(f'[{self.name}] Could not get the scan {nexpose_id}')
+            print(f'[{self.name}] Could not get the scan {nexpose_id}: ', sys.exc_info())
             return False
 
         parsed_report = BeautifulSoup(downloaded_report, features='xml')
@@ -203,6 +206,9 @@ class NexposeScanner(Scanner):
             
             if scan_results.get(name):
                 print('-------- Dup title', name)
+
+                self.common_service.is_duplicate(scan_results.get(name), vuln)
+
                 continue
 
             scan_result = {}

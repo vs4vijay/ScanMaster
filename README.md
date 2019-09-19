@@ -38,7 +38,15 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 
 
 
+## ToDo
 
+- [ ] Error Stack
+- [ ] auto reload
+- [ ] Remove logs
+- [ ] Save to CSV
+- [ ] Make it interactive
+- [ ] OOPs
+- [ ] Color logging
 
 
 
@@ -104,7 +112,7 @@ Scanner Interface:
         site = self.nexpose_site.create_site(site=site_create_resource)
 
         print('Site Created', site)
-        
+
         adhoc_scan = rapid7vmconsole.AdhocScan(hosts=[target])
         print('adhoc_scan', adhoc_scan)
 
@@ -165,5 +173,15 @@ report_config.organization = 'Organization'
 
 
 # print('self.zap.spider.results', self.zap.spider.results(scan_id))
+
+
+
+
+# Retrieve all tasks
+tasks = gmp.get_tasks()
+
+# Get names of tasks
+task_names = tasks.xpath('task/name/text()')
+pretty_print(task_names)
 
 ```

@@ -35,6 +35,9 @@ class Scanner:
     def _get_address(self, target):
         return re.sub('http[s]*://', '', target)
         
+    def _process_for_duplicates(self, scan_results):
+        return scan_results
+
     def print_scan_status(self, scan_status_list):
         status = []
         status.append([ '#', 'Scanner', 'Status'])
