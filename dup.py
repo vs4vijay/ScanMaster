@@ -12,18 +12,11 @@ stopwords = nltk.corpus.stopwords.words('english')
 stopwords.extend(string.punctuation)
 stopwords.append('')
 
-
-sent1 = "Check for Backdoor in UnrealIRCd"
-sent5 = " in Detection"
-
 # ed_sent_1_5 = nltk.edit_distance(sent1,sent5)
 
 # print('Edit Distance between sent1 and sent5: ', ed_sent_1_5)
 
 # print(1 - (float(ed_sent_1_5) / max(len(sent1), len(sent5)))) * 100
-
-a=sent1
-b=sent5
 
 
 a = 'Vijay Soni'
