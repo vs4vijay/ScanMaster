@@ -65,7 +65,7 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 
 
 ## ToDo
-- [ ] Add Nexpose
+- [ ] Add Nessus
 - [ ] Error Stack
 - [ ] auto reload
 - [ ] Remove logs
