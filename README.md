@@ -3,22 +3,39 @@
 Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates the scan result.
 
 
+![](/screenshots/screenshot1.png)
+
+
 ## Prerequisites
 
 - Python 3
 - Zap
 - Nexpose
+- OpenVAS
 
 
 ## Installation
 
 `pip3 install -r requirements.txt`
 
+OR
+
+Run in Virtual Env:
+
+```
+python3 -m venv .venv
+
+source .venv/bin/activate
+
+pip3 install -r requirements.txt
+```
+---
 
 ## Configuration
 
 The configuration of scanners will be in Environment File `.env`. There is sample `.env.example` file in the codebase, update the values with the proper API Keys and Credentials details before using. Rename it to `.env`.
 
+---
 
 ## Start a Scan against a Target
 
@@ -33,13 +50,11 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 ## Targets to Test
 - http://scanme.nmap.org
 - http://webscantest.com
-
-
-
+---
 
 
 ## ToDo
-
+- [ ] Add Nexpose
 - [ ] Error Stack
 - [ ] auto reload
 - [ ] Remove logs
@@ -47,20 +62,9 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 - [ ] Make it interactive
 - [ ] OOPs
 - [ ] Color logging
+---
 
-
-
-
-### Development Notes
-
-```
-python3 -m venv .venv
-
-source .venv/bin/activate
-```
-
-
-Scanner Interface:
+### Scanner Interface:
 
 - start
 - scan
@@ -73,32 +77,15 @@ Scanner Interface:
 - stop
 
 
-
-
-
-
-
-
----------------------------------------------
-
-
+### Development Notes
 
 ```python3
-
-
-
-
 
         pprint(core.htmlreport())
 
 
-
         # address = rapid7vmconsole.Address(ip=target)
         # asset = rapid7vmconsole.Asset(addresses=[address])
-
-
-
-
 
 
         scan_targets = rapid7vmconsole.IncludedScanTargets(addresses=[target])
@@ -123,14 +110,9 @@ Scanner Interface:
         # scan['vulnerabilities']
         pprint(scan)
 
-
-
 if shutdownOnceFinished:
     # Shutdown ZAP once finished
     pprint('Shutdown ZAP -> ' + core.shutdown())
-
-
-
 
 report_config_scope = rapid7vmconsole.ReportConfigScopeResource(scan=nexpose_id)
 
@@ -183,5 +165,4 @@ tasks = gmp.get_tasks()
 # Get names of tasks
 task_names = tasks.xpath('task/name/text()')
 pretty_print(task_names)
-
 ```
