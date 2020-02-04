@@ -10,7 +10,6 @@ from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
-from core.common_service import CommonService
 
 load_dotenv(find_dotenv())
 
@@ -25,7 +24,7 @@ class NexposeScanner(Scanner):
     name = 'Nexpose'
     
     def __init__(self):
-        self.nexpose_config = rapid7vmconsole.Configuration(name='VulnScanner')
+        self.nexpose_config = rapid7vmconsole.Configuration(name='Scanner')
         self.nexpose_config.username = config['USERNAME']
         self.nexpose_config.password = config['PASSWORD']
         self.nexpose_config.host = config['HOST']
@@ -50,7 +49,6 @@ class NexposeScanner(Scanner):
         self.nexpose_assets = rapid7vmconsole.AssetApi(api_client)
         self.nexpose_report = rapid7vmconsole.ReportApi(api_client)
         self.storage_service = StorageService()
-        self.common_service = CommonService()
     
 
     def start(self, scan_name, target):

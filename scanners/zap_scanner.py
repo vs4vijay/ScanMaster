@@ -9,7 +9,6 @@ from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
-from core.common_service import CommonService
 
 load_dotenv(find_dotenv())
 
@@ -29,7 +28,6 @@ class ZapScanner(Scanner):
     def __init__(self):
         self.zap = ZAPv2(apikey=API_KEY)
         self.storage_service = StorageService()
-        self.common_service = CommonService()
     
     def start(self, scan_name, target):
         print(f'[{self.name}] Starting Scan for Target: {target}')

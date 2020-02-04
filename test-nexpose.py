@@ -13,7 +13,7 @@ config = {
     'PASSWORD': ''
 }
 
-nexpose_config = rapid7vmconsole.Configuration(name='VulnScanner')
+nexpose_config = rapid7vmconsole.Configuration(name='Scanner')
 nexpose_config.username = config['USERNAME']
 nexpose_config.password = config['PASSWORD']
 nexpose_config.host = config['HOST']

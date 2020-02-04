@@ -1,9 +1,41 @@
-# VulnScanner
+# MultiScanner
 
-Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates the scan result.
+A Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates the scan results.
+
+---
+
+## Usage
+
+### Start a scan against a Target
+
+`./main.py --scan-name <scan-name> --target <url>`
 
 
-![](/screenshots/screenshot1.png)
+### Get scan result
+
+`./main.py --scan-name <scan-name>`
+
+
+### Pause/Resume a scan result
+
+- `./main.py --scan-name <scan-name> --pause`
+- `./main.py --scan-name <scan-name> --resume`
+
+---
+
+## Screenshots
+
+Scanner Options:
+
+![Scanner Options](/screenshots/screenshot_0.png)
+
+Scanner Report:
+
+![Scanner Report](/screenshots/screenshot_1.png)
+
+Final Output:
+
+![Final Output](/screenshots/screenshot_2.png)
 
 ---
 
@@ -24,15 +56,15 @@ OR
 
 Run in Virtual Env:
 
-```
+```console
 python3 -m venv .venv
 
 source .venv/bin/activate
 
 pip3 install -r requirements.txt
 ```
----
 
+---
 
 ## Configuration
 
@@ -40,31 +72,14 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 
 ---
 
-
-## Start a scan against a Target
-
-`./main.py --scan-name <scan-name> --target <url>`
-
-
-## Get scan result
-
-`./main.py --scan-name <scan-name>`
-
-
-## Pause/Resume a scan result
-
-- `./main.py --scan-name <scan-name> --pause`
-- `./main.py --scan-name <scan-name> --resume`
-
-
 ## Targets to Test
 - http://scanme.nmap.org
 - http://webscantest.com
 
 ---
 
-
 ## ToDo
+- [ ] Dockerize
 - [ ] Add Nessus
 - [ ] Error Stack
 - [ ] auto reload
@@ -72,7 +87,9 @@ The configuration of scanners will be in Environment File `.env`. There is sampl
 - [ ] Save to CSV
 - [ ] Make it interactive
 - [ ] OOPs
+- [ ] Improve Scan Results and Output
 - [ ] Color logging
+
 ---
 
 ### Scanner Interface:

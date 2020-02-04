@@ -14,7 +14,7 @@ from scanners.openvas_scanner import OpenVASScanner
 
 load_dotenv(find_dotenv())
 
-logging.basicConfig(filename='vuln-scanner.log', level=logging.INFO)
+logging.basicConfig(filename='scanner.log', level=logging.INFO)
 
 def main(config):
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--target', help='Specify the Target URL or IP')
     parser.add_argument('-p', '--pause', action='store_true', help='Pause a specified scan')
     parser.add_argument('-r', '--resume', action='store_true', help='Resume a specified scan')
-    parser.add_argument('-v', '--version', action='version', version='VulnScanner 1.0')
+    parser.add_argument('-v', '--version', action='version', version='MultiScanner 1.0')
     args = parser.parse_args()
 
     config = {

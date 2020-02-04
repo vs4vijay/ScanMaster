@@ -13,7 +13,6 @@ from dotenv import load_dotenv, find_dotenv
 
 from .scanner import Scanner
 from core.storage_service import StorageService
-from core.common_service import CommonService
 
 load_dotenv(find_dotenv())
 
@@ -35,7 +34,6 @@ class OpenVASScanner(Scanner):
         transform = EtreeTransform()
         self.gmp = Gmp(connection, transform=transform)
         self.storage_service = StorageService()
-        self.common_service = CommonService()
 
         # Login
         try:
