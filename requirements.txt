@@ -6,7 +6,7 @@ cffi==1.12.3
 chardet==3.0.4
 cryptography==2.7
 defusedxml==0.6.0
-gvm-tools==2.0.0b1
+gvm-tools==2.1.0
 idna==2.8
 lxml==4.4.1
 nltk==3.4.5
