@@ -24,5 +24,5 @@ six==1.12.0
 soupsieve==1.9.2
 terminaltables==3.1.0
 tinydb==3.13.0
-urllib3==1.25.3
+urllib3==1.25.8
 xmltodict==0.12.0
