@@ -9,7 +9,7 @@ defusedxml==0.6.0
 gvm-tools==2.0.0b1
 idna==2.8
 lxml==4.4.1
-nltk==3.4.5
+nltk==3.6.4
 paramiko==2.6.0
 pprint==0.1
 pycparser==2.19
