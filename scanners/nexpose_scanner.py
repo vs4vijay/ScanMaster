@@ -55,7 +55,9 @@ class NexposeScanner(Scanner):
         print(f'[{self.name}] Starting Scan for Target: {target}')
 
         try:
-            return self.scan(scan_name, target)
+        self.scan_status = 'INPROGRESS'
+        self.scan_results = self.scan(scan_name, target)
+        return self.scan_results
         except:
             print(f'[{self.name}] Not able to connect to the {self.name}: ', sys.exc_info()) 
             return False
@@ -103,6 +105,8 @@ class NexposeScanner(Scanner):
         self.storage_service.update_by_name(scan_name, scan_data)
 
         return scan_data
+        self.scan_status = None
+        self.scan_results = None
 
 
     def _create_report(self, scan_name):
@@ -167,7 +171,8 @@ class NexposeScanner(Scanner):
             'status': scan_status['status']
         })
 
-        return scan_status_list
+        self.scan_status = scan_status['status']
+        return self.scan_status
 
 
     def get_scan_results(self, scan_name, scan_results={}):
@@ -195,7 +200,8 @@ class NexposeScanner(Scanner):
 
         self._process_results(parsed_report, scan_results)
 
-        return scan_results
+        self.scan_results = scan_results
+        return self.scan_results
     
     def _process_results(self, report, scan_results):
 
