@@ -17,6 +17,8 @@ load_dotenv(find_dotenv())
 logging.basicConfig(filename='scanner.log', level=logging.INFO)
 
 def main(config):
+    
+    print("hello")
 
     scanners = [ZapScanner(), NexposeScanner(), OpenVASScanner()]
 
