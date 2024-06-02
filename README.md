@@ -1,6 +1,6 @@
-# MultiScanner
+# ScanMaster
 
-A Security Tool which scans a target using OpenVAS, Zap, and Nexpose. And consolidates the scan results.
+A security tool designed to perform thorough scans on a target using OpenVAS, Zap, and Nexpose. It seamlessly consolidates and integrates the scan results, providing a comprehensive overview of the security vulnerabilities identified.
 
 ---
 
