@@ -34,6 +34,8 @@ class OpenVASScanner(Scanner):
         transform = EtreeTransform()
         self.gmp = Gmp(connection, transform=transform)
         self.storage_service = StorageService()
+        self.scan_status = None
+        self.scan_results = None
 
         # Login
         try:
@@ -49,9 +51,11 @@ class OpenVASScanner(Scanner):
 
     def start(self, scan_name, target):
         print(f'[{self.name}] Starting Scan for Target: {target}')
+        self.scan_status = 'INPROGRESS'
 
         try:
-            return self.scan(scan_name, target)
+            self.scan_results = self.scan(scan_name, target)
+            return self.scan_results
         except:
             print(f'[{self.name}] Not able to connect to the {self.name}: ', sys.exc_info()) 
             return False
@@ -65,6 +69,7 @@ class OpenVASScanner(Scanner):
         # Creating Target
         target_response = self.gmp.create_target(name=scan_name, hosts=[address])
         # print('target_response')
+        self.scan_status = 'INPROGRESS'
         pretty_print(target_response)
         target_id = target_response.get('id')
 
@@ -132,6 +137,7 @@ class OpenVASScanner(Scanner):
         print(f'[{self.name}] Created Report: {report_id} with Task: {task_id}')
 
         self.storage_service.update_by_name(scan_name, scan_data)
+        self.scan_status = 'COMPLETE'
 
         return scan_data
     
@@ -141,8 +147,7 @@ class OpenVASScanner(Scanner):
         if not self.is_valid_scan(scan_name):
             return False
 
-        scan_data = self.storage_service.get_by_name(scan_name)
-        scan_status = scan_data.get('OPENVAS', {}).get('scan_status', {})
+        return self.scan_status
         openvas_id = scan_data.get('OPENVAS', {})['openvas_id']
         target = scan_data['target']
 
@@ -179,7 +184,7 @@ class OpenVASScanner(Scanner):
         if not self.is_valid_scan(scan_name):
             return False
 
-        scan_data = self.storage_service.get_by_name(scan_name)
+        return self.scan_results
 
         # if scan_data.get('OPENVAS', {}).get('scan_status').get('status', None) != 'COMPLETE':
         #     print(f'[{self.name}] Scan is in progress')
@@ -233,8 +238,7 @@ class OpenVASScanner(Scanner):
 
     def is_valid_scan(self, scan_name):
 
-        scan_data = self.storage_service.get_by_name(scan_name)
-        if not scan_data:
+        if self.scan_status is None:
             print(f'[{self.name}] Invalid Scan Name: {scan_name}')
             return False
 

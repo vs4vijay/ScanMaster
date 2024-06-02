@@ -28,6 +28,8 @@ class ZapScanner(Scanner):
     def __init__(self):
         self.zap = ZAPv2(apikey=API_KEY)
         self.storage_service = StorageService()
+        self.scan_status = None
+        self.scan_results = None
     
     def start(self, scan_name, target):
         print(f'[{self.name}] Starting Scan for Target: {target}')
@@ -63,6 +65,11 @@ class ZapScanner(Scanner):
 
         # self.storage_service.update_by_name(scan_name, { status: 'RESUMED' })
         return scan
+    def get_scan_status(self):
+        return self.scan_status
+
+    def get_scan_results(self):
+        return self.scan_results
 
     def stop(self, scan_name):
         if not self.is_valid_scan(scan_name):
@@ -104,6 +111,8 @@ class ZapScanner(Scanner):
         # a_scan_id = self.zap.ascan.scan(target, recurse=True, inscopeonly=None, scanpolicyname=None, method=None, postdata=True)
 
         scan_data = self.storage_service.get_by_name(scan_name)
+        self.scan_results = scan_data
+        self.scan_status = 'INPROGRESS'
 
         if not scan_data:
             scan_data = {
@@ -143,6 +152,7 @@ class ZapScanner(Scanner):
         spider_scan_status = self.zap.spider.status(zap_id)
         passive_scan_records_pending = self.zap.pscan.records_to_scan
         active_scan_status = self.zap.ascan.status(zap_id)
+        self.scan_status = 'INPROGRESS' if int(spider_scan_status) < 100 or int(active_scan_status) < 100 else 'COMPLETE'
 
         scan_status['spider_scan'] = self._parse_status(spider_scan_status)
         scan_status['active_scan'] = self._parse_status(active_scan_status)
