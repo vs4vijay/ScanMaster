@@ -1,0 +1,23 @@
+name: PR Gate Workflow
+
+on: [pull_request]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: |
+        pip install poetry
+        poetry install
+    - name: Lint with flake8
+      run: |
+        poetry run flake8 scanners/ tests/
+    - name: Test with pytest
+      run: |
+        poetry run pytest

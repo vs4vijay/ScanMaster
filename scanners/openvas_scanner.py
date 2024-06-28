@@ -295,4 +295,3 @@ class OpenVASScanner(Scanner):
         
     def list_scans(self):
         pass
-

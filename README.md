@@ -50,18 +50,10 @@ Final Output:
 
 ## Installation
 
-`pip3 install -r requirements.txt`
-
-OR
-
-Run in Virtual Env:
+To install the project dependencies, use Poetry:
 
 ```console
-python3 -m venv .venv
-
-source .venv/bin/activate
-
-pip3 install -r requirements.txt
+poetry install
 ```
 
 ---
