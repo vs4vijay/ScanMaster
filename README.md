@@ -4,22 +4,15 @@ A security tool designed to perform thorough scans on a target using OpenVAS, Za
 
 ---
 
-## Usage
+## Phase 1 usage
 
-### Start a scan against a Target
+```console
+uv run scanmaster --version
+uv run scanmaster scanners
+uv run scanmaster doctor
+```
 
-`./main.py --scan-name <scan-name> --target <url>`
-
-
-### Get scan result
-
-`./main.py --scan-name <scan-name>`
-
-
-### Pause/Resume a scan result
-
-- `./main.py --scan-name <scan-name> --pause`
-- `./main.py --scan-name <scan-name> --resume`
+Scanning commands are delivered in Phase 2. Only scan systems you own or have explicit permission to test.
 
 ---
 
@@ -41,27 +34,15 @@ Final Output:
 
 ## Prerequisites
 
-- Python 3
-- Zap
-- Nexpose
-- OpenVAS
+- `uv`
+- Python 3.14 (installed automatically by `uv` when needed)
 
 ---
 
 ## Installation
 
-`pip3 install -r requirements.txt`
-
-OR
-
-Run in Virtual Env:
-
 ```console
-python3 -m venv .venv
-
-source .venv/bin/activate
-
-pip3 install -r requirements.txt
+uv sync --locked
 ```
 
 ---
@@ -69,12 +50,6 @@ pip3 install -r requirements.txt
 ## Configuration
 
 The configuration of scanners will be in Environment File `.env`. There is sample `.env.example` file in the codebase, update the values with the proper API Keys and Credentials details before using. Rename it to `.env`.
-
----
-
-## Targets to Test
-- http://scanme.nmap.org
-- http://webscantest.com
 
 ---
 

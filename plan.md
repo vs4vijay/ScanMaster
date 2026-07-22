@@ -35,7 +35,7 @@ Implementation is divided into vertical slices. Every phase must leave the appli
 
 ## Vertical delivery phases
 
-### Phase 1 — Runnable foundation and diagnostics
+### Phase 1 — Runnable foundation and diagnostics ✅ COMPLETE
 
 Deliver an installable `scanmaster` command with validated configuration and a complete diagnostic path.
 
@@ -44,6 +44,8 @@ Deliver an installable `scanmaster` command with validated configuration and a c
 - Add `scanmaster --version`, `scanmaster scanners`, and `scanmaster doctor` using a registry with initially stubbed health adapters.
 - Add `.env.example` entries for database/artifact paths, log level, polling and execution timeouts, retention, and TLS defaults, plus namespaced ZAP, Nuclei, Greenbone, and Rapid7 settings.
 - Exit `0` on success and `2` for invalid configuration or failed diagnostics. Test process-environment-over-dotenv precedence, missing/invalid values, cross-field validation, and secret redaction.
+
+Completion record (2026-07-23): initialized the Python 3.14 `uv` package and lockfile; added domain/application/ports/adapters/entrypoint boundaries, immutable validated settings, redacted logging, typed errors/events/capabilities, scanner registry health stubs, and the version/scanners/doctor CLI workflow. Replaced legacy dependency/bootstrap instructions with locked `uv` commands. Verification passed with Ruff formatting/lint, strict mypy, package build, and 14 unit/process-level E2E tests at 99% measured coverage. Phase 2 has not been started.
 
 ### Phase 2 — End-to-end passive ZAP scan
 
