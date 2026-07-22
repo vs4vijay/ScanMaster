@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     zap_enabled: bool = False
     zap_url: HttpUrl = HttpUrl("http://127.0.0.1:8080")
     zap_api_key: SecretStr | None = None
+    zap_plan_host_directory: Path = Path(".scanmaster/zap-plans")
+    zap_plan_container_directory: Path = Path("/zap/wrk")
     zap_tls_verify: bool | None = None
 
     nuclei_enabled: bool = False

@@ -4,10 +4,13 @@ version = "0.1.0"
 description = "Security-scanning orchestrator for authorized targets"
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.18.5",
+    "httpx>=0.28.1",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "python-dotenv>=1.2.2",
     "rich>=15.0.0",
+    "sqlalchemy>=2.0.51",
     "typer>=0.27.0",
 ]
 

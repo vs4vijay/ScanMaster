@@ -1,0 +1,13 @@
+services:
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable@sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2
+    command: ["zap.sh", "-daemon", "-host", "0.0.0.0", "-port", "8080", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true", "-config", "api.key=${SCANMASTER_ZAP_API_KEY:-scanmaster-local-only}"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ${SCANMASTER_ZAP_PLAN_HOST_DIRECTORY:-./.scanmaster/zap-plans}:/zap/wrk:rw
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:8080/JSON/core/view/version/?apikey=${SCANMASTER_ZAP_API_KEY:-scanmaster-local-only}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30

@@ -1,0 +1,16 @@
+from typing import Protocol
+
+from scanmaster.domain.runs import Finding, RunState, ScanRun
+
+
+class RunRepository(Protocol):
+    def create(self, run: ScanRun) -> None: ...
+    def get(self, run_id: str) -> ScanRun | None: ...
+    def set_state(
+        self, run_id: str, state: RunState, *, external_id: str | None = None, error: str | None = None
+    ) -> None: ...
+    def replace_findings(self, run_id: str, findings: tuple[Finding, ...]) -> None: ...
+
+
+class ArtifactStore(Protocol):
+    def write_json(self, run_id: str, name: str, payload: object) -> str: ...

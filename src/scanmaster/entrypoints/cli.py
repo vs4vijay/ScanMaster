@@ -9,8 +9,13 @@ from rich.table import Table
 from scanmaster import __version__
 from scanmaster.adapters.config import Settings, load_settings
 from scanmaster.adapters.logging import configure_logging
+from scanmaster.adapters.persistence import FilesystemArtifactStore, SqliteRunRepository
+from scanmaster.adapters.reports import render_json, render_terminal
 from scanmaster.adapters.scanners import build_stub_adapters
+from scanmaster.adapters.zap import ZapAdapter
 from scanmaster.application.diagnostics import Diagnose, DiagnoseRequest, ListScanners, ListScannersRequest
+from scanmaster.application.scans import CancelRun, GetRun, StartScan, StartScanRequest
+from scanmaster.domain.runs import RunState
 
 app = typer.Typer(help="Orchestrate authorized security scans.", no_args_is_help=True)
 console = Console()
@@ -80,6 +85,88 @@ def doctor() -> None:
     for scanner in disabled_tls:
         error_console.print(f"[bold yellow]WARNING: TLS verification is disabled for {scanner}.[/bold yellow]")
     if not result.passed:
+        raise typer.Exit(2)
+
+
+def _runtime(settings: Settings) -> tuple[SqliteRunRepository, FilesystemArtifactStore, ZapAdapter]:
+    repository = SqliteRunRepository(settings.database_path)
+    artifacts = FilesystemArtifactStore(settings.artifact_path, repository)
+    adapter = ZapAdapter(
+        str(settings.zap_url),
+        settings.zap_api_key.get_secret_value() if settings.zap_api_key else None,
+        settings.tls_verify_for("zap"),
+        settings.execution_timeout_seconds,
+        settings.zap_plan_host_directory,
+        settings.zap_plan_container_directory,
+    )
+    return repository, artifacts, adapter
+
+
+@app.command("scan")
+def scan(
+    target: Annotated[str, typer.Argument(help="Authorized target URL.")],
+    scanner: Annotated[str, typer.Option("--scanner", help="Scanner to run.")],
+) -> None:
+    """Run a passive scan and persist its result."""
+    settings = _settings()
+    if scanner != "zap" or not settings.zap_enabled:
+        error_console.print(f"[bold red]Scanner is not enabled:[/bold red] {scanner}")
+        raise typer.Exit(2)
+    repository, artifacts, adapter = _runtime(settings)
+    try:
+        run = StartScan(
+            repository, artifacts, adapter, settings.polling_interval_seconds, settings.execution_timeout_seconds
+        ).execute(StartScanRequest(target, scanner))
+    except ValueError as error:
+        error_console.print(f"[bold red]Invalid scan request:[/bold red] {error}")
+        raise typer.Exit(2) from None
+    render_terminal(run, console)
+    if run.state is RunState.FAILED:
+        raise typer.Exit(2)
+
+
+@app.command("status")
+def status(run_id: Annotated[str, typer.Argument(help="Persisted run identifier.")]) -> None:
+    """Show a persisted run from this or a previous process."""
+    repository, _, _ = _runtime(_settings())
+    try:
+        run = GetRun(repository).execute(run_id)
+    except KeyError:
+        error_console.print(f"[bold red]Run not found:[/bold red] {run_id}")
+        raise typer.Exit(2) from None
+    render_terminal(run, console)
+
+
+@app.command("cancel")
+def cancel(run_id: Annotated[str, typer.Argument(help="Persisted run identifier.")]) -> None:
+    """Cancel an active ZAP run."""
+    repository, _, adapter = _runtime(_settings())
+    try:
+        run = CancelRun(repository, adapter).execute(run_id)
+    except (KeyError, ValueError) as error:
+        error_console.print(f"[bold red]Unable to cancel run:[/bold red] {error}")
+        raise typer.Exit(2) from None
+    render_terminal(run, console)
+
+
+@app.command("report")
+def report(
+    run_id: Annotated[str, typer.Argument(help="Persisted run identifier.")],
+    report_format: Annotated[str, typer.Option("--format", help="terminal or json")] = "terminal",
+) -> None:
+    """Render a persisted scan report."""
+    repository, _, _ = _runtime(_settings())
+    try:
+        run = GetRun(repository).execute(run_id)
+    except KeyError:
+        error_console.print(f"[bold red]Run not found:[/bold red] {run_id}")
+        raise typer.Exit(2) from None
+    if report_format == "json":
+        console.print(render_json(run), markup=False)
+    elif report_format == "terminal":
+        render_terminal(run, console)
+    else:
+        error_console.print("[bold red]Invalid report format:[/bold red] expected terminal or json")
         raise typer.Exit(2)
 
 

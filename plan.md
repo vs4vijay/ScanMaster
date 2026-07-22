@@ -47,7 +47,7 @@ Deliver an installable `scanmaster` command with validated configuration and a c
 
 Completion record (2026-07-23): initialized the Python 3.14 `uv` package and lockfile; added domain/application/ports/adapters/entrypoint boundaries, immutable validated settings, redacted logging, typed errors/events/capabilities, scanner registry health stubs, and the version/scanners/doctor CLI workflow. Replaced legacy dependency/bootstrap instructions with locked `uv` commands. Verification passed with Ruff formatting/lint, strict mypy, package build, and 14 unit/process-level E2E tests at 99% measured coverage. Phase 2 has not been started.
 
-### Phase 2 — End-to-end passive ZAP scan
+### Phase 2 — End-to-end passive ZAP scan ✅ COMPLETE
 
 Deliver the first complete workflow: submit a safe web scan, persist it, and view its result from another process.
 
@@ -57,6 +57,8 @@ Deliver the first complete workflow: submit a safe web scan, persist it, and vie
 - Implement `scanmaster scan TARGET --scanner zap`, `status RUN_ID`, `cancel RUN_ID`, and `report RUN_ID --format terminal|json`.
 - Default ZAP to passive/baseline scanning. Persist state transitions and raw redacted scanner responses, recover status from a fresh CLI process, and isolate adapter failures from stored run data.
 - Integration-test against a disposable local HTTP fixture; never scan public targets in CI.
+
+Completion record (2026-07-23): added SQLAlchemy declarative ORM persistence and an Alembic base migration for runs, scanner jobs, findings, occurrences, and artifact metadata; no handwritten SQL is used. Added filesystem JSON artifacts with recursive secret-key redaction, canonical typed targets for URLs, hostnames, IPs, CIDRs, and explicitly prefixed API specifications, and a passive-only ZAP adapter using the Automation Framework `runPlan(filePath)`, `planProgress(planId)`, and `stopPlan(planId)` APIs. Added persisted `scan`, `status`, `cancel`, and terminal/JSON `report` commands, including failure isolation and fresh-process reloads. Added a local-only Compose ZAP service pinned to immutable digest `sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2` with explicit host/container plan bind paths. Verification passed Ruff formatting/lint, strict mypy, Alembic base-to-head SQL generation, Compose configuration validation, package build, and 27 unit/process-level E2E tests at 91.94% measured coverage. The E2E workflow uses only loopback fixtures and verifies submission, normalization, artifact creation, ORM persistence, and status/report recovery from new CLI processes. Phase 3 has not been started.
 
 ### Phase 3 — Nuclei and capability-aware orchestration
 
