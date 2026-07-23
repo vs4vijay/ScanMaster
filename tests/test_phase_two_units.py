@@ -85,7 +85,7 @@ def test_scan_validation_and_adapter_failure_are_persisted(tmp_path: Path) -> No
     adapter = FakeAdapter()
     use_case = StartScan(repository, artifacts, adapter, 0, 1)
     with pytest.raises(ValueError, match="not available"):
-        use_case.execute(StartScanRequest("https://example.test", "nuclei"))
+        use_case.execute(StartScanRequest("https://example.test", "unknown"))
     with pytest.raises(ValueError, match="URL targets only"):
         use_case.execute(StartScanRequest("192.0.2.1", "zap"))
 

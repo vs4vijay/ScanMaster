@@ -27,7 +27,14 @@ class Settings(BaseSettings):
     zap_tls_verify: bool | None = None
 
     nuclei_enabled: bool = False
-    nuclei_image: str = "projectdiscovery/nuclei:disabled-until-phase-3"
+    nuclei_image: str = (
+        "projectdiscovery/nuclei:v3.8.0@sha256:aa3a9c0894629405b5bbe644765dfffd6ff87b7663b5f1d64bcbc01341da335a"
+    )
+    nuclei_templates_directory: Path = Path(".scanmaster/nuclei-templates")
+    nuclei_rate_limit: int = Field(default=50, ge=1, le=1000)
+    nuclei_concurrency: int = Field(default=10, ge=1, le=100)
+    nuclei_timeout_seconds: int = Field(default=10, ge=1, le=300)
+    nuclei_identification_header: str = "ScanMaster/0.1 authorized-security-scan"
     nuclei_tls_verify: bool | None = None
 
     greenbone_enabled: bool = False

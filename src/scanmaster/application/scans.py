@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from scanmaster.domain.runs import RunState, ScanRun, utc_now
@@ -15,6 +16,21 @@ from scanmaster.ports.scan_execution import ScannerExecutionPort
 class StartScanRequest:
     target: str
     scanner: str
+
+
+@dataclass(frozen=True, slots=True)
+class ScanBinding:
+    name: str
+    adapter: ScannerExecutionPort
+    target_kinds: frozenset[TargetKind]
+    supports_durable_detach: bool
+
+
+@dataclass(frozen=True, slots=True)
+class StartScansRequest:
+    target: str
+    scanners: tuple[str, ...]
+    detach: bool = False
 
 
 class StartScan:
@@ -33,10 +49,10 @@ class StartScan:
         self._timeout = timeout
 
     def execute(self, request: StartScanRequest) -> ScanRun:
-        if request.scanner != "zap":
+        if request.scanner not in {"zap", "nuclei"}:
             raise ValueError(f"scanner is not available for scanning: {request.scanner}")
         target = Target.parse(request.target)
-        if target.kind is not TargetKind.URL:
+        if request.scanner == "zap" and target.kind is not TargetKind.URL:
             raise ValueError("ZAP accepts URL targets only")
         now = utc_now()
         run = ScanRun(str(uuid.uuid4()), request.scanner, target, RunState.PENDING, now, now)
@@ -62,6 +78,56 @@ class StartScan:
         result = self._repository.get(run.id)
         assert result is not None
         return result
+
+
+class StartScans:
+    """Preflights the complete request, then runs scanner workflows concurrently."""
+
+    def __init__(
+        self,
+        repository: RunRepository,
+        artifacts: ArtifactStore,
+        bindings: dict[str, ScanBinding],
+        polling_interval: float,
+        timeout: float,
+    ) -> None:
+        self._repository = repository
+        self._artifacts = artifacts
+        self._bindings = bindings
+        self._polling_interval = polling_interval
+        self._timeout = timeout
+
+    def execute(self, request: StartScansRequest) -> tuple[ScanRun, ...]:
+        if not request.scanners:
+            raise ValueError("at least one --scanner is required")
+        if len(set(request.scanners)) != len(request.scanners):
+            raise ValueError("each scanner may be selected only once")
+        target = Target.parse(request.target)
+        selected: list[ScanBinding] = []
+        for name in request.scanners:
+            binding = self._bindings.get(name)
+            if binding is None:
+                raise ValueError(f"scanner is not enabled: {name}")
+            if target.kind not in binding.target_kinds:
+                raise ValueError(f"{name} does not accept {target.kind.value} targets")
+            if request.detach and not binding.supports_durable_detach:
+                raise ValueError(f"{name} does not support durable detach")
+            selected.append(binding)
+        if request.detach:
+            raise ValueError("detached orchestration is not available in this release")
+
+        def execute(binding: ScanBinding) -> ScanRun:
+            return StartScan(
+                self._repository,
+                self._artifacts,
+                binding.adapter,
+                self._polling_interval,
+                self._timeout,
+            ).execute(StartScanRequest(request.target, binding.name))
+
+        with ThreadPoolExecutor(max_workers=len(selected), thread_name_prefix="scanmaster") as executor:
+            futures = [executor.submit(execute, binding) for binding in selected]
+            return tuple(future.result() for future in futures)
 
 
 class GetRun:

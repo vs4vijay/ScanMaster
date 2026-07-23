@@ -1,4 +1,12 @@
 services:
+  nuclei:
+    image: projectdiscovery/nuclei:v3.8.0@sha256:aa3a9c0894629405b5bbe644765dfffd6ff87b7663b5f1d64bcbc01341da335a
+    profiles: ["nuclei"]
+    entrypoint: ["nuclei"]
+    command: ["-version"]
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable@sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2
     command: ["zap.sh", "-daemon", "-host", "0.0.0.0", "-port", "8080", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true", "-config", "api.key=${SCANMASTER_ZAP_API_KEY:-scanmaster-local-only}"]

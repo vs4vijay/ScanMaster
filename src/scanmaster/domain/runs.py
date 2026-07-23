@@ -33,6 +33,11 @@ class Finding:
     remediation: str | None = None
     location: str | None = None
     evidence: str | None = None
+    references: tuple[str, ...] = ()
+    cve_ids: tuple[str, ...] = ()
+    cwe_ids: tuple[str, ...] = ()
+    cvss_score: float | None = None
+    cvss_vector: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

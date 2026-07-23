@@ -9,13 +9,15 @@ from rich.table import Table
 from scanmaster import __version__
 from scanmaster.adapters.config import Settings, load_settings
 from scanmaster.adapters.logging import configure_logging
+from scanmaster.adapters.nuclei import NucleiAdapter, NucleiPolicy, NucleiProfile
 from scanmaster.adapters.persistence import FilesystemArtifactStore, SqliteRunRepository
 from scanmaster.adapters.reports import render_json, render_terminal
 from scanmaster.adapters.scanners import build_stub_adapters
 from scanmaster.adapters.zap import ZapAdapter
 from scanmaster.application.diagnostics import Diagnose, DiagnoseRequest, ListScanners, ListScannersRequest
-from scanmaster.application.scans import CancelRun, GetRun, StartScan, StartScanRequest
+from scanmaster.application.scans import CancelRun, GetRun, ScanBinding, StartScans, StartScansRequest
 from scanmaster.domain.runs import RunState
+from scanmaster.domain.scanners import TargetKind
 
 app = typer.Typer(help="Orchestrate authorized security scans.", no_args_is_help=True)
 console = Console()
@@ -102,26 +104,62 @@ def _runtime(settings: Settings) -> tuple[SqliteRunRepository, FilesystemArtifac
     return repository, artifacts, adapter
 
 
+def _scan_bindings(
+    settings: Settings,
+    profile: NucleiProfile,
+) -> dict[str, ScanBinding]:
+    bindings: dict[str, ScanBinding] = {}
+    if settings.zap_enabled:
+        _, _, zap = _runtime(settings)
+        bindings["zap"] = ScanBinding("zap", zap, frozenset({TargetKind.URL}), True)
+    if settings.nuclei_enabled:
+        nuclei = NucleiAdapter(
+            settings.nuclei_image,
+            settings.nuclei_templates_directory,
+            settings.artifact_path / "nuclei-work",
+            settings.nuclei_rate_limit,
+            settings.nuclei_concurrency,
+            settings.nuclei_timeout_seconds,
+            settings.nuclei_identification_header,
+            NucleiPolicy(profile=profile),
+        )
+        bindings["nuclei"] = ScanBinding(
+            "nuclei", nuclei, NucleiAdapter.supported_target_kinds, NucleiAdapter.supports_durable_detach
+        )
+    return bindings
+
+
 @app.command("scan")
 def scan(
     target: Annotated[str, typer.Argument(help="Authorized target URL.")],
-    scanner: Annotated[str, typer.Option("--scanner", help="Scanner to run.")],
+    scanner: Annotated[list[str], typer.Option("--scanner", help="Scanner to run; repeat for multiple.")],
+    profile: Annotated[NucleiProfile, typer.Option("--profile", help="Nuclei safety profile.")] = NucleiProfile.SAFE,
+    confirm_authorized: Annotated[
+        bool, typer.Option("--confirm-authorized", help="Confirm authorization for intrusive scanning.")
+    ] = False,
+    detach: Annotated[bool, typer.Option("--detach", help="Return after durable scanner submission.")] = False,
 ) -> None:
     """Run a passive scan and persist its result."""
     settings = _settings()
-    if scanner != "zap" or not settings.zap_enabled:
-        error_console.print(f"[bold red]Scanner is not enabled:[/bold red] {scanner}")
+    if profile is NucleiProfile.INTRUSIVE and not confirm_authorized:
+        error_console.print("[bold red]Intrusive Nuclei scans require --confirm-authorized.[/bold red]")
         raise typer.Exit(2)
-    repository, artifacts, adapter = _runtime(settings)
+    repository = SqliteRunRepository(settings.database_path)
+    artifacts = FilesystemArtifactStore(settings.artifact_path, repository)
     try:
-        run = StartScan(
-            repository, artifacts, adapter, settings.polling_interval_seconds, settings.execution_timeout_seconds
-        ).execute(StartScanRequest(target, scanner))
+        runs = StartScans(
+            repository,
+            artifacts,
+            _scan_bindings(settings, profile),
+            settings.polling_interval_seconds,
+            settings.execution_timeout_seconds,
+        ).execute(StartScansRequest(target, tuple(scanner), detach))
     except ValueError as error:
         error_console.print(f"[bold red]Invalid scan request:[/bold red] {error}")
         raise typer.Exit(2) from None
-    render_terminal(run, console)
-    if run.state is RunState.FAILED:
+    for run in runs:
+        render_terminal(run, console)
+    if any(run.state is RunState.FAILED for run in runs):
         raise typer.Exit(2)
 
 

@@ -43,6 +43,11 @@ class FindingRow(Base):
     remediation: Mapped[str | None] = mapped_column(Text)
     location: Mapped[str | None] = mapped_column(Text)
     evidence: Mapped[str | None] = mapped_column(Text)
+    references_json: Mapped[str] = mapped_column(Text, default="[]")
+    cve_ids_json: Mapped[str] = mapped_column(Text, default="[]")
+    cwe_ids_json: Mapped[str] = mapped_column(Text, default="[]")
+    cvss_score: Mapped[float | None]
+    cvss_vector: Mapped[str | None] = mapped_column(Text)
     occurrences: Mapped[list[OccurrenceRow]] = relationship(cascade="all, delete-orphan")
 
 
@@ -118,6 +123,11 @@ class SqliteRunRepository:
                         item.remediation,
                         item.location,
                         item.evidence,
+                        tuple(json.loads(item.references_json)),
+                        tuple(json.loads(item.cve_ids_json)),
+                        tuple(json.loads(item.cwe_ids_json)),
+                        item.cvss_score,
+                        item.cvss_vector,
                     )
                     for item in row.findings
                 ),
@@ -154,6 +164,11 @@ class SqliteRunRepository:
                     remediation=f.remediation,
                     location=f.location,
                     evidence=f.evidence,
+                    references_json=json.dumps(f.references),
+                    cve_ids_json=json.dumps(f.cve_ids),
+                    cwe_ids_json=json.dumps(f.cwe_ids),
+                    cvss_score=f.cvss_score,
+                    cvss_vector=f.cvss_vector,
                     occurrences=[OccurrenceRow(location=f.location, evidence=f.evidence)],
                 )
                 for f in findings
