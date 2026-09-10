@@ -38,6 +38,14 @@ class Finding:
     cwe_ids: tuple[str, ...] = ()
     cvss_score: float | None = None
     cvss_vector: str | None = None
+    sources: tuple[str, ...] = ()
+    confidence: str | None = None
+    lifecycle: str | None = None
+    suppressed: bool = False
+    suppression_reason: str | None = None
+    suppression_owner: str | None = None
+    suppression_expires_at: datetime | None = None
+    enrichment: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

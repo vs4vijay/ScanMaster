@@ -9,6 +9,8 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "python-dotenv>=1.2.2",
+    "python-gvm>=27.5.0",
+    "pyyaml>=6.0.3",
     "rich>=15.0.0",
     "sqlalchemy>=2.0.51",
     "typer>=0.27.0",
@@ -27,6 +29,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.22",
+    "types-pyyaml>=6.0.12.20260518",
 ]
 
 [tool.pytest.ini_options]

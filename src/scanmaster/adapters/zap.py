@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import uuid
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,46 @@ import httpx
 from scanmaster.domain.runs import Finding, RunState, Severity
 from scanmaster.domain.targets import Target
 from scanmaster.ports.scan_execution import ScannerSnapshot, Submission
+
+
+class ZapSpider(StrEnum):
+    TRADITIONAL = "traditional"
+    AJAX = "ajax"
+    BOTH = "both"
+
+
+class ZapAuthentication(StrEnum):
+    NONE = "none"
+    MANUAL = "manual"
+    HTTP = "http"
+    NTLM = "ntlm"
+    FORM = "form"
+    JSON = "json"
+    AUTO_DETECT = "auto-detect"
+    BROWSER = "browser"
+    CLIENT_SCRIPT = "client-script"
+    SCRIPT = "script"
+
+
+@dataclass(frozen=True, slots=True)
+class ZapScanPolicy:
+    active: bool = False
+    authorized: bool = False
+    spider: ZapSpider = ZapSpider.TRADITIONAL
+    api_spec: str | None = None
+    graphql_endpoint: str | None = None
+    authentication: ZapAuthentication = ZapAuthentication.NONE
+    authentication_secret_env: str | None = None
+    include_paths: tuple[str, ...] = ()
+    exclude_paths: tuple[str, ...] = ()
+
+    def validate(self) -> None:
+        if self.active and not self.authorized:
+            raise ValueError("active ZAP scans require explicit authorization")
+        if self.authentication is not ZapAuthentication.NONE and not self.authentication_secret_env:
+            raise ValueError("authenticated ZAP scans require a secret environment variable name")
+        if self.authentication_secret_env and not self.authentication_secret_env.replace("_", "").isalnum():
+            raise ValueError("authentication secret environment variable name is invalid")
 
 
 class ZapAdapter:
@@ -23,11 +65,14 @@ class ZapAdapter:
         timeout: float,
         plan_host_directory: Path = Path(".scanmaster/zap-plans"),
         plan_container_directory: Path = Path("/zap/wrk"),
+        policy: ZapScanPolicy | None = None,
     ) -> None:
         self._client = httpx.Client(base_url=base_url.rstrip("/"), verify=verify, timeout=timeout)
         self._api_key = api_key
         self._plan_host_directory = plan_host_directory
         self._plan_container_directory = plan_container_directory
+        self._policy = policy or ZapScanPolicy()
+        self._policy.validate()
 
     def _params(self, **values: str) -> dict[str, str]:
         if self._api_key:
@@ -37,13 +82,38 @@ class ZapAdapter:
     def submit(self, target: Target) -> Submission:
         if target.kind.value != "url":
             raise ValueError("ZAP accepts URL targets only")
-        plan = {
-            "env": {"contexts": [{"name": "scanmaster", "urls": [target.canonical]}]},
-            "jobs": [
-                {"type": "spider", "parameters": {"context": "scanmaster", "url": target.canonical}},
-                {"type": "passiveScan-wait", "parameters": {"maxDuration": 0}},
-            ],
-        }
+        context: dict[str, Any] = {"name": "scanmaster", "urls": [target.canonical]}
+        if self._policy.include_paths:
+            context["includePaths"] = list(self._policy.include_paths)
+        if self._policy.exclude_paths:
+            context["excludePaths"] = list(self._policy.exclude_paths)
+        if self._policy.authentication is not ZapAuthentication.NONE:
+            # ZAP resolves the value inside its process. The plan contains only a variable
+            # reference, never the credential supplied to the container/runtime.
+            secret = f"${{{self._policy.authentication_secret_env}}}"
+            context["authentication"] = {
+                "method": self._policy.authentication.value,
+                "parameters": {"secret": secret},
+                "verification": {"method": "autodetect"},
+            }
+        jobs: list[dict[str, Any]] = []
+        if self._policy.api_spec:
+            jobs.append(
+                {
+                    "type": "openapi",
+                    "parameters": {"apiFile": self._policy.api_spec, "targetUrl": target.canonical},
+                }
+            )
+        if self._policy.graphql_endpoint:
+            jobs.append({"type": "graphql", "parameters": {"endpoint": self._policy.graphql_endpoint}})
+        if self._policy.spider in {ZapSpider.TRADITIONAL, ZapSpider.BOTH}:
+            jobs.append({"type": "spider", "parameters": {"context": "scanmaster", "url": target.canonical}})
+        if self._policy.spider in {ZapSpider.AJAX, ZapSpider.BOTH}:
+            jobs.append({"type": "spiderAjax", "parameters": {"context": "scanmaster", "url": target.canonical}})
+        jobs.append({"type": "passiveScan-wait", "parameters": {"maxDuration": 0}})
+        if self._policy.active:
+            jobs.append({"type": "activeScan", "parameters": {"context": "scanmaster"}})
+        plan = {"env": {"contexts": [context]}, "jobs": jobs}
         self._plan_host_directory.mkdir(parents=True, exist_ok=True)
         filename = f"scanmaster-{uuid.uuid4()}.json"
         host_plan_path = self._plan_host_directory / filename

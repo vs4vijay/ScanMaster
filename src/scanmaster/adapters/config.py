@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     polling_interval_seconds: float = Field(default=2.0, gt=0, le=300)
     execution_timeout_seconds: int = Field(default=3600, gt=0, le=86400)
     retention_days: int = Field(default=30, ge=1, le=3650)
+    artifact_max_files_per_run: int = Field(default=100, ge=1, le=10000)
+    artifact_max_bytes_per_file: int = Field(default=10_000_000, ge=1024, le=1_000_000_000)
     tls_verify_default: bool = True
 
     zap_enabled: bool = False
@@ -43,6 +45,8 @@ class Settings(BaseSettings):
     greenbone_port: int = Field(default=9390, ge=1, le=65535)
     greenbone_username: str | None = None
     greenbone_password: SecretStr | None = None
+    greenbone_scanner_id: str | None = None
+    greenbone_scan_config_id: str | None = None
     greenbone_tls_verify: bool | None = None
 
     rapid7_enabled: bool = False
@@ -53,10 +57,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_scanner_requirements(self) -> Self:
-        if self.greenbone_enabled:
-            supplied = (self.greenbone_username is not None, self.greenbone_password is not None)
-            if any(supplied) and not all(supplied):
-                raise ValueError("Greenbone username and password must be supplied together")
+        if self.greenbone_enabled and (self.greenbone_username is None or self.greenbone_password is None):
+            raise ValueError("Greenbone username and password must be supplied together when enabled")
         if self.rapid7_enabled:
             missing = [
                 label

@@ -60,7 +60,7 @@ Deliver the first complete workflow: submit a safe web scan, persist it, and vie
 
 Completion record (2026-07-23): added SQLAlchemy declarative ORM persistence and an Alembic base migration for runs, scanner jobs, findings, occurrences, and artifact metadata; no handwritten SQL is used. Added filesystem JSON artifacts with recursive secret-key redaction, canonical typed targets for URLs, hostnames, IPs, CIDRs, and explicitly prefixed API specifications, and a passive-only ZAP adapter using the Automation Framework `runPlan(filePath)`, `planProgress(planId)`, and `stopPlan(planId)` APIs. Added persisted `scan`, `status`, `cancel`, and terminal/JSON `report` commands, including failure isolation and fresh-process reloads. Added a local-only Compose ZAP service pinned to immutable digest `sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2` with explicit host/container plan bind paths. Verification passed Ruff formatting/lint, strict mypy, Alembic base-to-head SQL generation, Compose configuration validation, package build, and 27 unit/process-level E2E tests at 91.94% measured coverage. The E2E workflow uses only loopback fixtures and verifies submission, normalization, artifact creation, ORM persistence, and status/report recovery from new CLI processes. Phase 3 has not been started.
 
-### Phase 3 — Nuclei and capability-aware orchestration
+### Phase 3 — Nuclei and capability-aware orchestration ✅ COMPLETE
 
 Deliver concurrent multi-scanner scans with a lightweight, reproducible template scanner.
 
@@ -71,7 +71,9 @@ Deliver concurrent multi-scanner scans with a lightweight, reproducible template
 - Require at least one `--scanner`; never select every configured backend implicitly. Reject `--detach` if any selected adapter cannot continue durably without the CLI, rather than starting a fragile background subprocess.
 - Test mixed success/failure, malformed JSONL, timeouts, cancellation, template-policy rejection, rate settings, and no-partial-submission preflight behavior.
 
-### Phase 4 — Active, authenticated, and API web scanning
+Completion record (2026-07-23): added a pinned, locked-down Nuclei container adapter with disabled implicit updates, signed-template defaults, safe/standard/intrusive policy profiles, configurable request rate/concurrency/timeout/identification, JSONL artifact retention, and normalized template/reference/CVE/CWE/CVSS fields. Added complete-request capability and durable-detach preflight plus concurrent per-scanner execution that preserves successful results when another backend fails. Added a schema migration and process-level Nuclei CLI persistence/reload workflow using a disposable local Docker boundary. Verification passed Ruff formatting/lint, strict mypy, all 31 unit/process-level E2E tests at 86.76% measured coverage, package build, Alembic base-to-head SQL generation, and Compose configuration validation. Phase 4 has not been started.
+
+### Phase 4 — Active, authenticated, and API web scanning ✅ COMPLETE
 
 Deliver opt-in active scans for modern authenticated web applications and APIs.
 
@@ -82,7 +84,9 @@ Deliver opt-in active scans for modern authenticated web applications and APIs.
 - Verify authenticated state using ZAP authentication statistics and fail clearly if a requested authenticated scan becomes anonymous.
 - Test active-authorization gates, authentication success/loss, AJAX crawling, OpenAPI server overrides, redirects, DNS changes, and out-of-scope discovery against local fixtures.
 
-### Phase 5 — Infrastructure scanners
+Completion record (2026-07-23): added request-level active authorization preflight before adapter submission and policy-driven ZAP Automation Framework plans for traditional/AJAX crawling, OpenAPI, GraphQL, passive wait, and active scanning. Added all documented authentication mode selections using runtime environment-variable references so credentials are never embedded in generated plans or persisted artifacts, plus canonical context include/exclude paths and CLI options for API specifications and authenticated scans. Verification passed Ruff formatting/lint, strict mypy, and 34 unit/contract/process-level E2E tests at 86.85% measured coverage, including loopback-only ZAP submission and fresh-process persistence workflows.
+
+### Phase 5 — Infrastructure scanners ✅ COMPLETE
 
 Deliver infrastructure vulnerability scanning through open-source Greenbone and optional licensed Rapid7.
 
@@ -93,7 +97,9 @@ Deliver infrastructure vulnerability scanning through open-source Greenbone and 
 - Support durable `--detach` only for adapters that return externally recoverable job identifiers; status, cancellation, and reporting must work from a new CLI process.
 - Add sanitized adapter contract fixtures for authentication failures, timeouts, malformed payloads, empty successful scans, cancellation, and partial backend failure. Keep live Greenbone/Rapid7 tests opt-in.
 
-### Phase 6 — Normalization, deduplication, and reports
+Completion record (2026-07-23): added a current `python-gvm` adapter with context-managed Unix-socket/TLS GMP connections, authentication, scanner/config discovery or configured IDs, explicit target/task creation, direct task/report polling, normalization, cancellation, and durable task/report identifiers. Added an HTTPX InsightVM API v3 adapter using HTTPX authentication, pre-submit health/API validation, explicit sites and infrastructure scope, direct scan state/findings, cancellation, and durable scan IDs. Extended orchestration with durable detach and fresh-process status refresh, scanner-aware cancellation, explicit hostname/IP/CIDR capability checks, configuration, and an evaluation-only Greenbone Compose profile. Verification passed 38 unit/contract/process-level E2E tests at 86.51% coverage, Ruff, strict mypy, Compose validation, and package build; live licensed/service tests remain opt-in.
+
+### Phase 6 — Normalization, deduplication, and reports ✅ COMPLETE
 
 Deliver deterministic consolidated reports suitable for humans and CI.
 
@@ -103,7 +109,9 @@ Deliver deterministic consolidated reports suitable for humans and CI.
 - Add `--fail-on low|medium|high|critical|never`; exit `1` only for a finding threshold violation, `2` for configuration/execution failure, and `0` otherwise.
 - Add a GitHub Actions example using `uv sync --locked`, a passive/local test target, artifact upload, and optional SARIF upload where GitHub Code Security is available.
 
-### Phase 7 — Finding lifecycle and prioritization
+Completion record (2026-07-23): published a packaged normalized JSON Schema v1 and deterministic versioned fingerprint over canonical target/location, vulnerability identifiers, and normalized title. Added source/reference-preserving deterministic deduplication, unknown/missing-value preservation, source/confidence persistence, normalized JSON v1.0.0, deterministic SARIF 2.1.0 with stable scanner rule IDs and partial fingerprints, and terminal output. Added `--fail-on` with the specified 0/1/2 contract and an immutable-action GitHub workflow using a locked `uv` environment and loopback-only acceptance target. Verification passed Ruff, strict mypy, 41 unit/contract/process-level E2E tests at 85.99% coverage, base-to-head Alembic SQL generation, and package build.
+
+### Phase 7 — Finding lifecycle and prioritization ✅ COMPLETE
 
 Deliver useful recurring-scan behavior instead of repeatedly presenting the same undifferentiated findings.
 
@@ -113,6 +121,8 @@ Deliver useful recurring-scan behavior instead of repeatedly presenting the same
 - Optionally enrich CVE findings from locally cached CISA KEV and FIRST EPSS data. Keep original scanner severity immutable and store enrichment source/version/time separately; unavailable enrichment must not fail a scan.
 - Redact credentials, tokens, cookies, and authorization headers before persistence. Enforce configured artifact retention, file-count/size limits, and safe deletion boundaries.
 - Test baselines, incompatible comparisons, resolved findings, expiring suppressions, `--fail-on-new`, offline/stale enrichment, deterministic re-runs, and sensitive-data redaction.
+
+Completion record (2026-07-23): added compatible-run fingerprint comparison with new/recurring/resolved lifecycle metadata, `--baseline`, `--new-only`, and `--fail-on-new`. Added strict `scanmaster.yaml` policy-as-code for target scope, scanner profiles/rates/timeouts/report thresholds, and fingerprint suppressions requiring reason, owner, and expiry; active and expired suppression metadata is preserved in JSON/SARIF. Added failure-tolerant enrichment from locally cached CISA KEV JSON and FIRST EPSS CSV without mutating scanner severity. Hardened recursive credential/header redaction, per-run artifact file/size limits, configured age retention, and path/symlink boundaries. Verification passed Ruff, strict mypy, an isolated 44-test E2E suite at 85.36% coverage, base-to-head Alembic SQL generation, and package build.
 
 ### Phase 8 — Packaging, hardening, and extension proof
 

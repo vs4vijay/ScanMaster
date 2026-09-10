@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
+from time import time
 
 from sqlalchemy import ForeignKey, String, Text, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
@@ -48,6 +49,14 @@ class FindingRow(Base):
     cwe_ids_json: Mapped[str] = mapped_column(Text, default="[]")
     cvss_score: Mapped[float | None]
     cvss_vector: Mapped[str | None] = mapped_column(Text)
+    sources_json: Mapped[str] = mapped_column(Text, default="[]")
+    confidence: Mapped[str | None] = mapped_column(String(40))
+    lifecycle: Mapped[str | None] = mapped_column(String(20))
+    suppressed: Mapped[bool] = mapped_column(default=False)
+    suppression_reason: Mapped[str | None] = mapped_column(Text)
+    suppression_owner: Mapped[str | None] = mapped_column(String(200))
+    suppression_expires_at: Mapped[str | None] = mapped_column(String(40))
+    enrichment_json: Mapped[str] = mapped_column(Text, default="[]")
     occurrences: Mapped[list[OccurrenceRow]] = relationship(cascade="all, delete-orphan")
 
 
@@ -128,6 +137,14 @@ class SqliteRunRepository:
                         tuple(json.loads(item.cwe_ids_json)),
                         item.cvss_score,
                         item.cvss_vector,
+                        tuple(json.loads(item.sources_json)),
+                        item.confidence,
+                        item.lifecycle,
+                        item.suppressed,
+                        item.suppression_reason,
+                        item.suppression_owner,
+                        datetime.fromisoformat(item.suppression_expires_at) if item.suppression_expires_at else None,
+                        tuple(tuple(pair) for pair in json.loads(item.enrichment_json)),
                     )
                     for item in row.findings
                 ),
@@ -169,6 +186,14 @@ class SqliteRunRepository:
                     cwe_ids_json=json.dumps(f.cwe_ids),
                     cvss_score=f.cvss_score,
                     cvss_vector=f.cvss_vector,
+                    sources_json=json.dumps(f.sources),
+                    confidence=f.confidence,
+                    lifecycle=f.lifecycle,
+                    suppressed=f.suppressed,
+                    suppression_reason=f.suppression_reason,
+                    suppression_owner=f.suppression_owner,
+                    suppression_expires_at=f.suppression_expires_at.isoformat() if f.suppression_expires_at else None,
+                    enrichment_json=json.dumps(f.enrichment),
                     occurrences=[OccurrenceRow(location=f.location, evidence=f.evidence)],
                 )
                 for f in findings
@@ -180,15 +205,46 @@ class SqliteRunRepository:
 
 
 class FilesystemArtifactStore:
-    def __init__(self, root: Path, repository: SqliteRunRepository) -> None:
+    def __init__(
+        self,
+        root: Path,
+        repository: SqliteRunRepository,
+        max_files_per_run: int = 100,
+        max_bytes_per_file: int = 10_000_000,
+        retention_days: int | None = None,
+    ) -> None:
         self._root = root.resolve()
         self._repository = repository
+        self._max_files_per_run = max_files_per_run
+        self._max_bytes_per_file = max_bytes_per_file
+        if retention_days is not None:
+            self._prune_expired(retention_days)
+
+    def _prune_expired(self, retention_days: int) -> None:
+        if not self._root.exists():
+            return
+        cutoff = time() - retention_days * 86400
+        for directory in self._root.iterdir():
+            if not directory.is_dir() or directory.is_symlink() or directory.resolve().parent != self._root:
+                continue
+            for artifact in directory.iterdir():
+                if artifact.is_file() and not artifact.is_symlink() and artifact.stat().st_mtime < cutoff:
+                    artifact.unlink()
+            if not any(directory.iterdir()):
+                directory.rmdir()
 
     def write_json(self, run_id: str, name: str, payload: object) -> str:
         directory = self._root / run_id
         directory.mkdir(parents=True, exist_ok=True)
         destination = directory / f"{name}.json"
-        destination.write_text(json.dumps(_redact(payload), indent=2, sort_keys=True, default=str), encoding="utf-8")
+        if directory.resolve().parent != self._root or destination.parent.resolve() != directory.resolve():
+            raise ValueError("artifact path escapes configured root")
+        if not destination.exists() and len(tuple(directory.glob("*.json"))) >= self._max_files_per_run:
+            raise ValueError("artifact file-count limit exceeded")
+        serialized = json.dumps(_redact(payload), indent=2, sort_keys=True, default=str)
+        if len(serialized.encode()) > self._max_bytes_per_file:
+            raise ValueError("artifact size limit exceeded")
+        destination.write_text(serialized, encoding="utf-8")
         self._repository.record_artifact(run_id, name, str(destination))
         return str(destination)
 

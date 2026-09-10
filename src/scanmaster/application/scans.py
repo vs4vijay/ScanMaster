@@ -3,11 +3,13 @@ from __future__ import annotations
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
+from scanmaster.domain.normalization import deduplicate
 from scanmaster.domain.runs import RunState, ScanRun, utc_now
 from scanmaster.domain.scanners import TargetKind
 from scanmaster.domain.targets import Target
+from scanmaster.ports.progress import ProgressEvent, ProgressSink
 from scanmaster.ports.runs import ArtifactStore, RunRepository
 from scanmaster.ports.scan_execution import ScannerExecutionPort
 
@@ -31,6 +33,8 @@ class StartScansRequest:
     target: str
     scanners: tuple[str, ...]
     detach: bool = False
+    active: bool = False
+    confirm_authorized: bool = False
 
 
 class StartScan:
@@ -41,12 +45,14 @@ class StartScan:
         adapter: ScannerExecutionPort,
         polling_interval: float,
         timeout: float,
+        progress: ProgressSink | None = None,
     ) -> None:
         self._repository = repository
         self._artifacts = artifacts
         self._adapter = adapter
         self._polling_interval = polling_interval
         self._timeout = timeout
+        self._progress = progress
 
     def execute(self, request: StartScanRequest) -> ScanRun:
         if request.scanner not in {"zap", "nuclei"}:
@@ -57,9 +63,13 @@ class StartScan:
         now = utc_now()
         run = ScanRun(str(uuid.uuid4()), request.scanner, target, RunState.PENDING, now, now)
         self._repository.create(run)
+        if self._progress:
+            self._progress.publish(ProgressEvent("run.created", run.id, now))
         try:
             submission = self._adapter.submit(target)
             self._repository.set_state(run.id, RunState.RUNNING, external_id=submission.external_id)
+            if self._progress:
+                self._progress.publish(ProgressEvent("run.submitted", submission.external_id, utc_now()))
             self._artifacts.write_json(run.id, "submission", submission.raw)
             deadline = time.monotonic() + self._timeout
             while time.monotonic() < deadline:
@@ -68,7 +78,11 @@ class StartScan:
                 if snapshot.state is RunState.RUNNING:
                     time.sleep(self._polling_interval)
                     continue
-                self._repository.replace_findings(run.id, snapshot.findings)
+                findings = tuple(
+                    finding if finding.sources else replace(finding, sources=(request.scanner,))
+                    for finding in snapshot.findings
+                )
+                self._repository.replace_findings(run.id, deduplicate(target, findings))
                 self._repository.set_state(run.id, snapshot.state, error=snapshot.error)
                 break
             else:
@@ -77,6 +91,8 @@ class StartScan:
             self._repository.set_state(run.id, RunState.FAILED, error=f"{type(error).__name__}: {error}")
         result = self._repository.get(run.id)
         assert result is not None
+        if self._progress:
+            self._progress.publish(ProgressEvent("run.finished", result.state.value, utc_now()))
         return result
 
 
@@ -102,6 +118,8 @@ class StartScans:
             raise ValueError("at least one --scanner is required")
         if len(set(request.scanners)) != len(request.scanners):
             raise ValueError("each scanner may be selected only once")
+        if request.active and not request.confirm_authorized:
+            raise ValueError("active scans require --active and --confirm-authorized")
         target = Target.parse(request.target)
         selected: list[ScanBinding] = []
         for name in request.scanners:
@@ -114,7 +132,21 @@ class StartScans:
                 raise ValueError(f"{name} does not support durable detach")
             selected.append(binding)
         if request.detach:
-            raise ValueError("detached orchestration is not available in this release")
+            runs: list[ScanRun] = []
+            for binding in selected:
+                now = utc_now()
+                run = ScanRun(str(uuid.uuid4()), binding.name, target, RunState.PENDING, now, now)
+                self._repository.create(run)
+                try:
+                    submission = binding.adapter.submit(target)
+                    self._repository.set_state(run.id, RunState.RUNNING, external_id=submission.external_id)
+                    self._artifacts.write_json(run.id, "submission", submission.raw)
+                except Exception as error:
+                    self._repository.set_state(run.id, RunState.FAILED, error=f"{type(error).__name__}: {error}")
+                persisted = self._repository.get(run.id)
+                assert persisted is not None
+                runs.append(persisted)
+            return tuple(runs)
 
         def execute(binding: ScanBinding) -> ScanRun:
             return StartScan(
@@ -141,16 +173,49 @@ class GetRun:
         return run
 
 
-class CancelRun:
-    def __init__(self, repository: RunRepository, adapter: ScannerExecutionPort) -> None:
+class RefreshRun:
+    """Refresh a durable scanner job and persist its latest snapshot."""
+
+    def __init__(
+        self,
+        repository: RunRepository,
+        artifacts: ArtifactStore,
+        adapters: dict[str, ScannerExecutionPort],
+    ) -> None:
         self._repository = repository
-        self._adapter = adapter
+        self._artifacts = artifacts
+        self._adapters = adapters
+
+    def execute(self, run_id: str) -> ScanRun:
+        run = GetRun(self._repository).execute(run_id)
+        if run.state is not RunState.RUNNING or not run.external_id:
+            return run
+        adapter = self._adapters.get(run.scanner)
+        if adapter is None:
+            raise ValueError(f"scanner is not enabled for status refresh: {run.scanner}")
+        snapshot = adapter.status(run.external_id)
+        self._artifacts.write_json(run.id, "latest-status", snapshot.raw)
+        if snapshot.state is not RunState.RUNNING:
+            self._repository.replace_findings(run.id, snapshot.findings)
+            self._repository.set_state(run.id, snapshot.state, error=snapshot.error)
+        return GetRun(self._repository).execute(run.id)
+
+
+class CancelRun:
+    def __init__(
+        self, repository: RunRepository, adapters: dict[str, ScannerExecutionPort] | ScannerExecutionPort
+    ) -> None:
+        self._repository = repository
+        self._adapters = adapters
 
     def execute(self, run_id: str) -> ScanRun:
         run = GetRun(self._repository).execute(run_id)
         if run.state not in {RunState.PENDING, RunState.RUNNING}:
             raise ValueError(f"run cannot be cancelled from state {run.state.value}")
+        adapter = self._adapters.get(run.scanner) if isinstance(self._adapters, dict) else self._adapters
+        if adapter is None:
+            raise ValueError(f"scanner is not enabled for cancellation: {run.scanner}")
         if run.external_id:
-            self._adapter.cancel(run.external_id)
+            adapter.cancel(run.external_id)
         self._repository.set_state(run.id, RunState.CANCELLED)
         return GetRun(self._repository).execute(run.id)

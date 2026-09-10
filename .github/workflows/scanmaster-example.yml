@@ -1,0 +1,26 @@
+name: ScanMaster passive example
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  passive-scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install pinned uv
+        run: curl -LsSf https://astral.sh/uv/0.8.3/install.sh | sh
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run loopback-only passive acceptance workflow
+        run: uv run pytest -q tests/test_phase_two_e2e.py tests/test_phase_three.py
+      - name: Upload sanitized scan artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scanmaster-artifacts
+          path: .scanmaster/artifacts
+          if-no-files-found: ignore

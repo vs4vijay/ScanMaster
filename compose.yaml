@@ -1,4 +1,30 @@
 services:
+  scanmaster:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["scanmaster"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - scanmaster-data:/data
+      - ${SCANMASTER_ZAP_PLAN_HOST_DIRECTORY:-./.scanmaster/zap-plans}:/zap/wrk:rw
+    tmpfs: ["/tmp"]
+    healthcheck:
+      test: ["CMD", "scanmaster", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  greenbone:
+    image: registry.community.greenbone.net/community/gvmd:stable@sha256:1f8f91e32f31c72c3799665b24653642061cf2c781f9ef22f75995911242ca19
+    profiles: ["greenbone"]
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - greenbone-socket:/run/gvmd
   nuclei:
     image: projectdiscovery/nuclei:v3.8.0@sha256:aa3a9c0894629405b5bbe644765dfffd6ff87b7663b5f1d64bcbc01341da335a
     profiles: ["nuclei"]
@@ -19,3 +45,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+volumes:
+  scanmaster-data:
+  greenbone-socket:

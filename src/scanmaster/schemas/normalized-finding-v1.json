@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scanmaster.invalid/schemas/normalized-finding-v1.json",
+  "title": "ScanMaster normalized run",
+  "type": "object",
+  "required": ["schema_version", "id", "scanner", "target", "state", "findings"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string"},
+    "scanner": {"type": "string"},
+    "target": {"type": "object"},
+    "state": {"type": "string"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["native_id", "title", "severity", "fingerprint", "sources"],
+        "properties": {
+          "native_id": {"type": "string"},
+          "title": {"type": "string"},
+          "severity": {"enum": ["unknown", "info", "low", "medium", "high", "critical"]},
+          "fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "sources": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
