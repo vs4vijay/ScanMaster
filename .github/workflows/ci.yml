@@ -29,7 +29,7 @@ jobs:
       - name: Generate SBOM
         run: docker sbom --format cyclonedx-json scanmaster:test > scanmaster-sbom.json
       - name: Scan image
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           image-ref: scanmaster:test
           severity: HIGH,CRITICAL
